@@ -1,0 +1,55 @@
+[
+    {
+      "id": "sci001",
+      "category": "Cannabis Science",
+      "question": "What is the main psychoactive compound found in cannabis?",
+      "options": [
+        "CBD (Cannabidiol)",
+        "THC (Tetrahydrocannabinol)",
+        "CBN (Cannabinol)",
+        "CBG (Cannabigerol)"
+      ],
+      "correctAnswer": "THC (Tetrahydrocannabinol)",
+      "explanation": "THC is the primary cannabinoid responsible for the euphoric and psychoactive effects associated with cannabis."
+    },
+    {
+      "id": "prod001",
+      "category": "Product Knowledge",
+      "question": "Which consumption method typically has the fastest onset of effects?",
+      "options": [
+        "Edibles",
+        "Tinctures (Sublingual)",
+        "Inhalation (Smoking/Vaping)",
+        "Topicals"
+      ],
+      "correctAnswer": "Inhalation (Smoking/Vaping)",
+      "explanation": "Inhalation allows cannabinoids to enter the bloodstream quickly through the lungs, leading to effects often felt within minutes."
+    },
+    {
+      "id": "cust001",
+      "category": "Customer Interaction",
+      "question": "A customer asks for something to help them sleep. Which cannabinoid is often associated with sedative effects, especially in aged cannabis?",
+      "options": [
+        "THCV",
+        "CBD",
+        "CBG",
+        "CBN (Cannabinol)"
+      ],
+      "correctAnswer": "CBN (Cannabinol)",
+      "explanation": "CBN, often formed as THC degrades, is frequently researched and anecdotally reported for its potential sedative properties."
+    },
+    {
+      "id": "reg001",
+      "category": "Regulatory Compliance",
+      "question": "In most legal jurisdictions, what is the minimum age requirement to purchase recreational cannabis?",
+      "options": [
+        "18",
+        "19",
+        "21",
+        "25"
+      ],
+      "correctAnswer": "21",
+      "explanation": "Similar to alcohol, the most common minimum age for purchasing and possessing recreational cannabis in the US is 21."
+    }
+  ]
+  
