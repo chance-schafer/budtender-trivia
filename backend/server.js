@@ -57,9 +57,8 @@ require('./routes/invite.routes')(app); // <-- ADD THIS LINE
 console.log("Invite routes loaded.");   // <-- Optional log
 
 // Global Error Handler
-const errorHandler = require('./middleware/errorHandler');
-app.use(errorHandler);
-
+ const { errorHandler } = require("./middleware");
+ 
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Budtender Trivia API server running on port ${PORT}.`));
