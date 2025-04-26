@@ -1,6 +1,6 @@
 // frontend/src/services/auth.service.js
 import apiService from './api';
-const API_AUTH_URL = "/api/auth/";
+const API_AUTH_URL = "/auth/";
 
 const register = async (username, email, password, inviteCode) => {
   console.log(`AuthService: Attempting registration for user: ${username}`);
