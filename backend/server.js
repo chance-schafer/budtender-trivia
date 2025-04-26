@@ -43,6 +43,11 @@ async function initialRoles() {
 // Define a simple root route
 app.get("/", (req, res) => res.json({ message: "Welcome to the Budtender Trivia API!" }));
 
+app.get("/healthz", (req, res) => {
+  res.status(200).send("OK");
+});
+
+
 // Load and register all application routes
 console.log("Loading routes...");
 require('./routes/trivia.routes')(app);
@@ -79,7 +84,7 @@ const startServer = async () => {
     // 3. Start Listening for HTTP Requests
     // Use the port specified by Render's environment variable or fallback to 5000 for local dev
     const PORT = process.env.PORT || 5000;
-    const server = app.listen(PORT, () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       // This log now reliably indicates the server is successfully bound and listening
       console.log(`Budtender Trivia API server running and listening on port ${PORT}.`);
     });
