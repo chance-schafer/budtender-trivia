@@ -8,7 +8,11 @@ const app = express();
 
 // --- Middleware Setup ---
 // CORS configuration - Allow requests from frontend URL or localhost
-const corsOptions = { origin: process.env.FRONTEND_URL || "http://localhost:3000" };
+const corsOptions = { origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+};
 app.use(cors(corsOptions));
 // Body Parsers for JSON and URL-encoded data
 app.use(express.json());
