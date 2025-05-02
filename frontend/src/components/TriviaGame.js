@@ -47,9 +47,19 @@ function TriviaGame() {
     try {
       console.log(">>> Attempting API call to /trivia/questions");
       const response = await apiService.get('/trivia/questions');
+      // *** IMPORTANT: Verify the structure of response.data ***
+      // Ensure each question object in response.data.data (or wherever it is)
+      // has the question text, options array, AND the correct answer string
+      // under a consistent property name (e.g., 'answer').
       const fetchedData = response.data?.data || [];
       console.log(">>> API Response Data:", fetchedData);
-      if (fetchedData.length > 0) { const shuffled = [...fetchedData].sort(() => Math.random() - 0.5); setQuestions(shuffled); console.log(">>> Questions state SET with:", shuffled); }
+      if (fetchedData.length > 0) {
+          // Optional: Add a check here to ensure questions have the expected 'answer' property
+          // fetchedData.forEach(q => { if (typeof q.answer === 'undefined') console.warn(`Question ID ${q.id} is missing 'answer' property!`); });
+          const shuffled = [...fetchedData].sort(() => Math.random() - 0.5);
+          setQuestions(shuffled);
+          console.log(">>> Questions state SET with:", shuffled);
+      }
       else { setQuestions([]); console.log(">>> Questions state remains empty."); }
     } catch (err) { console.error(">>> Error fetching questions:", err); setError(err.response?.data?.message || err.message || 'Failed.'); setQuestions([]); }
     finally { setIsLoading(false); console.log(">>> fetchQuestions FINALLY block, isLoading: false"); }
@@ -68,21 +78,28 @@ function TriviaGame() {
 
     if (!currentQuestion) { console.error(`>>> handleAnswerSelect: ERROR - Could not find question at index ${currentQuestionIndex} in state!`); return; }
 
+    // *** FIX POINT 1: Use the correct property name for the answer ***
+    // Replace 'answer' with the actual property name from your API response if different
+    const correctAnswer = currentQuestion.answer;
+
     console.log(">>> handleAnswerSelect: Current Question Data derived from state:", currentQuestion);
     console.log(`>>> Comparing Selected: "${option}" (Type: ${typeof option})`);
-    console.log(`>>> With Correct Answer from State: "${currentQuestion.correct_answer}" (Type: ${typeof currentQuestion.correct_answer})`);
+    console.log(`>>> With Correct Answer from State: "${correctAnswer}" (Type: ${typeof correctAnswer})`); // Use the variable
 
-    const isCorrect = option === currentQuestion.correct_answer;
+    // Perform comparison using the retrieved correct answer
+    const isCorrect = option === correctAnswer;
     console.log(">>> Comparison Result (isCorrect):", isCorrect);
 
+    // Trimmed comparison (good practice)
     const selectedTrimmed = typeof option === 'string' ? option.trim() : option;
-    const correctTrimmed = typeof currentQuestion.correct_answer === 'string' ? currentQuestion.correct_answer.trim() : currentQuestion.correct_answer;
+    const correctTrimmed = typeof correctAnswer === 'string' ? correctAnswer.trim() : correctAnswer; // Use the variable
     const isCorrectTrimmed = selectedTrimmed === correctTrimmed;
     console.log(`>>> Comparison Result (Trimmed):`, isCorrectTrimmed);
 
     setSelectedAnswer(option);
     setIsAnswered(true);
-    setShowExplanation(true);
+    setShowExplanation(true); // Show explanation immediately after answering
+
     if (isCorrectTrimmed) { console.log(">>> Incrementing score!"); setScore(prev => prev + 1); }
     else { console.log(">>> Answer incorrect."); }
 
@@ -113,7 +130,6 @@ function TriviaGame() {
        const percentage = questions.length > 0 ? Math.round((score / questions.length) * 100) : 0;
        let message = "Good effort!"; if (percentage >= 80) message = "Excellent knowledge!"; else if (percentage >= 60) message = "Well done!";
        return (
-        // ** COMPLETE Game Over JSX **
         <div className="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-xl mx-auto border border-gray-200 dark:border-gray-700">
             <h2 className="text-3xl font-bold mb-4 text-green-700 dark:text-green-400">Trivia Complete!</h2>
             <p className="text-xl mb-2 dark:text-gray-200">Your final score:</p>
@@ -128,9 +144,10 @@ function TriviaGame() {
                     ) : scoreSubmitError ? (
                         <span className="text-red-500 dark:text-red-400">Could not save score: {scoreSubmitError}</span>
                     ) : (
-                        // Check if submission was attempted (isSubmittingScore was true) before showing success
-                        // This prevents showing "submitted" if the user wasn't logged in
-                         <span className="text-green-600 dark:text-green-400">Score submitted!</span>
+                         // Only show success if submission was attempted and no error occurred
+                         // Check if isSubmittingScore *was* true but is now false, and no error
+                         // A simple way is just checking if scoreSubmitError is null after potential submission
+                         scoreSubmitError === null && <span className="text-green-600 dark:text-green-400">Score submitted!</span>
                     )}
                 </div>
             )}
@@ -144,10 +161,14 @@ function TriviaGame() {
   const currentQuestion = questions[currentQuestionIndex];
   if (!currentQuestion) { console.log(`>>> Rendering: Spinner (waiting for currentQuestion)`); return <Spinner />; }
 
+  // *** FIX POINT 2: Use the correct property name for the answer ***
+  // Replace 'answer' with the actual property name from your API response if different
+  const correctAnswer = currentQuestion.answer;
+  const correctTrimmedAnswer = typeof correctAnswer === 'string' ? correctAnswer.trim() : correctAnswer;
+
   // Render Active Question UI
   console.log(">>> Rendering: Active Question UI (ID:", currentQuestion.id, ")");
   return (
-    // ** COMPLETE Active Game JSX **
     <div className="p-4 md:p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-2xl mx-auto font-inter border border-gray-200 dark:border-gray-700 w-full">
       {/* Header Section */}
       <div className="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center gap-2">
@@ -168,12 +189,16 @@ function TriviaGame() {
             if (isAnswered) {
               buttonClass += 'cursor-not-allowed ';
               // Use trimmed comparison for styling as well
-              const isCorrectOption = (typeof option === 'string' ? option.trim() : option) === (typeof currentQuestion.correct_answer === 'string' ? currentQuestion.correct_answer.trim() : currentQuestion.correct_answer);
-              const isSelectedOption = (typeof option === 'string' ? option.trim() : option) === (typeof selectedAnswer === 'string' ? selectedAnswer.trim() : selectedAnswer);
+              const optionTrimmed = typeof option === 'string' ? option.trim() : option;
+              const selectedTrimmed = typeof selectedAnswer === 'string' ? selectedAnswer.trim() : selectedAnswer;
+
+              // *** FIX POINT 3: Use the correct property name for the answer ***
+              const isCorrectOption = optionTrimmed === correctTrimmedAnswer;
+              const isSelectedOption = optionTrimmed === selectedTrimmed;
 
               if (isCorrectOption) buttonClass += "bg-green-100 dark:bg-green-900 border-green-400 dark:border-green-600 text-green-800 dark:text-green-100 font-semibold ring-2 ring-green-300";
-              else if (isSelectedOption) buttonClass += "bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-600 text-red-800 dark:text-red-100";
-              else buttonClass += "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 opacity-70";
+              else if (isSelectedOption) buttonClass += "bg-red-100 dark:bg-red-900 border-red-400 dark:border-red-600 text-red-800 dark:text-red-100"; // Incorrect selection
+              else buttonClass += "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 opacity-70"; // Other incorrect options
             } else { buttonClass += "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500"; }
             return ( <button key={`${currentQuestion.id}-option-${index}`} onClick={() => handleAnswerSelect(option)} disabled={isAnswered} className={buttonClass} aria-pressed={selectedAnswer === option}> {option} </button> );
           })
@@ -181,9 +206,14 @@ function TriviaGame() {
       </div>
       {/* Explanation */}
       {isAnswered && showExplanation && (
-        <div className={`p-4 rounded-lg mb-6 text-sm ${selectedAnswer === currentQuestion.correct_answer ? 'bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700' : 'bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700'}`}>
-          <h3 className="font-bold text-lg mb-2 dark:text-gray-100">{selectedAnswer === currentQuestion.correct_answer ? 'Correct!' : 'Incorrect'}</h3>
-          <p className="text-gray-700 dark:text-gray-300">{currentQuestion?.explanation || 'No explanation.'}</p>
+        // *** FIX POINT 4: Use the correct property name for the answer ***
+        <div className={`p-4 rounded-lg mb-6 text-sm ${(typeof selectedAnswer === 'string' ? selectedAnswer.trim() : selectedAnswer) === correctTrimmedAnswer ? 'bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700' : 'bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700'}`}>
+          <h3 className="font-bold text-lg mb-2 dark:text-gray-100">{(typeof selectedAnswer === 'string' ? selectedAnswer.trim() : selectedAnswer) === correctTrimmedAnswer ? 'Correct!' : 'Incorrect'}</h3>
+          {/* Display correct answer if incorrect */}
+          {(typeof selectedAnswer === 'string' ? selectedAnswer.trim() : selectedAnswer) !== correctTrimmedAnswer && (
+            <p className="text-gray-700 dark:text-gray-300 mb-2">Correct Answer: <span className="font-semibold">{correctAnswer}</span></p>
+          )}
+          <p className="text-gray-700 dark:text-gray-300">{currentQuestion?.explanation || 'No explanation provided.'}</p>
         </div>
       )}
       {/* Next Button */}
