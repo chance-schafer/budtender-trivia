@@ -38,7 +38,8 @@ exports.getQuestions = async (req, res) => {
 
     try {
         const questions = await Question.findAll({
-            attributes: ['id', 'question', 'options', 'category'], // Select only needed fields for client
+            // *** FIX: Add 'correct_answer' to the attributes array ***
+            attributes: ['id', 'question', 'options', 'category', 'correct_answer', 'explanation'], // Also added 'explanation' as it's used in frontend
             include: [{
                 model: Score,       // Use Score variable (from db.scores)
                 as: scoreAlias,     // Use the alias defined in Question.associate
@@ -65,7 +66,7 @@ exports.getQuestions = async (req, res) => {
         }
 
         console.log(`>>> Trivia Controller: Sending ${questions.length} questions for game round for User ID: ${userId}.`);
-        // Data is already clean due to specific attributes selection
+        // Data is now clean and includes correct_answer and explanation
         res.status(200).send({ data: questions });
 
     } catch (error) {
