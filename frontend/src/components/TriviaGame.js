@@ -25,9 +25,16 @@ function TriviaGame() {
     if (!currentUser || !currentUser.accessToken) { console.log(">>> Skipping score submission."); setScoreSubmitError("Log in to save scores."); return; }
     if (totalQuestions <= 0 || !Array.isArray(results) || results.length !== totalQuestions) { console.warn(">>> Invalid data for score submission"); setScoreSubmitError("Internal error."); return; }
     setIsSubmittingScore(true); setScoreSubmitError(null);
-    console.log(`>>> Attempting POST /api/scores:`, { score: finalScore, totalQuestions: totalQuestions, results: results });
+    
+    const payload = {
+      score: finalScore,
+      totalQuestions: totalQuestions,
+      // quizId: "someQuizId", // Optional: if you have a quiz ID for the session
+      // categoryId: "someCategoryId", // Optional: if the session belongs to a specific category
+    };
+    console.log(`>>> Attempting POST /api/scores:`, payload);
     try {
-      const response = await apiService.post('/scores', { score: finalScore, totalQuestions: totalQuestions, results: results });
+      const response = await apiService.post('/scores', payload);
       console.log(">>> Score submitted successfully:", response.data);
       // Set success state or clear error after successful submission
       setScoreSubmitError(null); // Clear any previous errors
