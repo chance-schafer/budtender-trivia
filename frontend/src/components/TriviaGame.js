@@ -29,6 +29,7 @@ function TriviaGame() {
     const payload = {
       score: finalScore,
       totalQuestions: totalQuestions,
+      results: results, // Add the results array to the payload
       // quizId: "someQuizId", // Optional: if you have a quiz ID for the session
       // categoryId: "someCategoryId", // Optional: if the session belongs to a specific category
     };
