@@ -1,59 +1,49 @@
-// d:\Base_Directory_Storage\Coding\dispensary-app\backend\models\score.model.js (Revised)
-module.exports = (sequelize, Sequelize) => {
-  // Define model using 'scores' name, matching db.scores key in index.js
-  const Score = sequelize.define("scores", {
+// backend/models/score.js
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const User = require('./user');
+// const Question = require('./question'); // Not directly needed for overall score
+
+const Score = sequelize.define('scores', {
     id: {
-      type: Sequelize.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true
     },
-    // Foreign key for the User who answered
     userId: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'users', // Assumes your users table is named 'users'
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: User, // 'users' is the table name
+            key: 'id'
+        }
     },
-    // Foreign key for the Question that was answered
-    questionId: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'questions', // Assumes your questions table is named 'questions'
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+    score: {
+        type: DataTypes.INTEGER,
+        allowNull: false
     },
-    // Was the answer correct?
-    isCorrect: {
-      type: Sequelize.BOOLEAN,
-      allowNull: false
-    },
-  }, {
-    tableName: 'scores', // Explicitly define table name
-    timestamps: true,    // Keep timestamps
-  });
+    // REMOVE these fields if this table is for OVERALL game scores
+    // questionId: {
+    //     type: DataTypes.INTEGER,
+    //     allowNull: false,
+    //     references: {
+    //         model: Question, // 'questions' is the table name
+    //         key: 'id'
+    //     }
+    // },
+    // isCorrect: {
+    //     type: DataTypes.BOOLEAN,
+    //     allowNull: false
+    // }
+}, {
+    timestamps: true
+});
 
-  // Define associations within the model file
-  Score.associate = (models) => {
-    // A Score belongs to one User
-    // *** Access User model using 'users' key ***
-    Score.belongsTo(models.users, { // Corrected from models.user
-      foreignKey: 'userId',
-      as: 'user' // Optional alias
-    });
-    // A Score belongs to one Question
-    // *** Access Question model using 'questions' key ***
-    Score.belongsTo(models.questions, { // Corrected from models.question
-      foreignKey: 'questionId',
-      as: 'question' // Optional alias
-    });
-  };
+Score.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(Score, { foreignKey: 'userId' });
 
-  return Score;
-};
+// REMOVE these associations if questionId is removed
+// Score.belongsTo(Question, { foreignKey: 'questionId' });
+// Question.hasMany(Score, { foreignKey: 'questionId' });
+
+module.exports = Score;

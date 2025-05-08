@@ -79,7 +79,7 @@ const startServer = async () => {
     // 1. Synchronize Database Schema
     // Ensure models/index.js is correctly configured for Render's DATABASE_URL and SSL
     // Use { force: true } or { alter: true } ONLY during development if needed for schema changes
-    await db.sequelize.sync();
+    await db.sequelize.sync({ alter: true });
     console.log("Database synced successfully.");
 
     // 2. Seed Initial Data (e.g., Roles)

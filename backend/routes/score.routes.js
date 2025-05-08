@@ -1,17 +1,53 @@
-// d:\Base_Directory_Storage\Coding\dispensary-app\backend\routes\score.routes.js
-// Defines routes related to scores (submit, cultivated, history)
-const controller = require("../controllers/score.controller");
-const { authJwt } = require("../middleware"); // Auth middleware
+// backend/routes/scores.js
+const express = require('express');
+const router = express.Router();
+const { Score, User } = require('../models'); // Assuming models are exported from an index.js in models
+// or const Score = require('../models/score'); const User = require('../models/user');
 
-module.exports = function(app) {
-  // Removed redundant CORS header setting middleware
+// POST a new score
+router.post('/', async (req, res) => {
+    try {
+        const { username, score } = req.body;
 
-  // POST /api/scores (Protected)
-  app.post( "/api/scores", [authJwt.verifyToken], controller.submitScore );
+        if (!username || score === undefined) {
+            return res.status(400).json({ message: "Username and score are required." });
+        }
 
-  // GET /api/scores/cultivated (Public)
-  app.get("/api/scores/cultivated", controller.getCultivated);
+        // Find the user by username to get their ID
+        const user = await User.findOne({ where: { username: username } });
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
 
-  // GET /api/scores/my-history (Protected)
-  app.get( "/api/scores/my-history", [authJwt.verifyToken], controller.getUserScoreHistory );
-};
+        // Create the score entry with userId
+        const newScore = await Score.create({
+            userId: user.id,
+            score: parseInt(score, 10) // Ensure score is an integer
+        });
+        res.status(201).json(newScore);
+    } catch (error) {
+        console.error("Error creating score:", error);
+        // Provide more specific error message from Sequelize if available
+        const errorMessage = error.errors ? error.errors.map(e => e.message).join(', ') : error.message;
+        res.status(500).json({ message: "Failed to submit score/stats.", error: errorMessage });
+    }
+});
+
+// GET all scores (example, you might want to join with User to get username)
+router.get('/', async (req, res) => {
+    try {
+        const scores = await Score.findAll({
+            include: [{
+                model: User,
+                attributes: ['username'] // Only include username from User model
+            }],
+            order: [['score', 'DESC']] // Order by score descending
+        });
+        res.json(scores);
+    } catch (error) {
+        console.error("Error fetching scores:", error);
+        res.status(500).json({ message: "Failed to fetch scores.", error: error.message });
+    }
+});
+
+module.exports = router;
