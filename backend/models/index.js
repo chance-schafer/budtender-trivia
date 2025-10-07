@@ -13,8 +13,7 @@ const db = {};
 let sequelize;
 
 // --- START: Render DATABASE_URL Integration ---
-let shouldUseDatabaseUrl = false;
-let databaseUrlToUse = process.env.DATABASE_URL;
+let databaseUrlError;
 
 if (process.env.DATABASE_URL) {
   try {
@@ -40,7 +39,6 @@ if (process.env.DATABASE_URL) {
         parsedUrl.hostname = `${hostname}.${normalizedSuffix}`;
         hostname = parsedUrl.hostname;
         looksResolvable = true;
-        databaseUrlToUse = parsedUrl.toString();
         console.log(
           `DATABASE_URL hostname appeared partial. Applied configured suffix to use "${hostname}".`
         );
@@ -49,18 +47,30 @@ if (process.env.DATABASE_URL) {
         parsedUrl.hostname = `${hostname}.${inferredSuffix}`;
         hostname = parsedUrl.hostname;
         looksResolvable = true;
-        databaseUrlToUse = parsedUrl.toString();
         console.log(
           `DATABASE_URL hostname appeared partial. Inferred Render hostname "${hostname}" using RENDER_REGION.`
         );
       }
+
+      if (looksResolvable) {
+        process.env.DATABASE_URL = parsedUrl.toString();
+      }
     }
 
     if (looksResolvable) {
-      if (databaseUrlToUse && databaseUrlToUse !== process.env.DATABASE_URL) {
-        process.env.DATABASE_URL = databaseUrlToUse;
-      }
-      shouldUseDatabaseUrl = true;
+      console.log('Connecting via DATABASE_URL...');
+      sequelize = new Sequelize(process.env.DATABASE_URL, {
+        dialect: 'postgres', // Specify dialect (Render uses PostgreSQL)
+        protocol: 'postgres',
+        dialectOptions: {
+          ssl: {
+            require: true, // Require SSL connection
+            rejectUnauthorized: false // Necessary for Render's self-signed certificates
+          }
+        },
+        logging: env === 'development' ? console.log : false, // Log SQL in dev only
+        pool: dbConfig.pool // You can still use pool settings from db.config.js
+      });
     } else {
       console.warn(
         `DATABASE_URL hostname "${hostname}" does not appear resolvable in this environment. ` +
@@ -68,6 +78,7 @@ if (process.env.DATABASE_URL) {
       );
     }
   } catch (error) {
+    databaseUrlError = error;
     console.warn(
       'DATABASE_URL is defined but could not be parsed. Falling back to db.config.js settings.',
       error
@@ -75,23 +86,11 @@ if (process.env.DATABASE_URL) {
   }
 }
 
-if (shouldUseDatabaseUrl) {
-  // If DATABASE_URL is set (like on Render), use it directly
-  console.log('Connecting via DATABASE_URL...');
-  sequelize = new Sequelize(databaseUrlToUse, {
-    dialect: 'postgres', // Specify dialect (Render uses PostgreSQL)
-    protocol: 'postgres',
-    dialectOptions: {
-      ssl: {
-        require: true, // Require SSL connection
-        rejectUnauthorized: false // Necessary for Render's self-signed certificates
-      }
-    },
-    logging: env === 'development' ? console.log : false, // Log SQL in dev only
-    pool: dbConfig.pool // You can still use pool settings from db.config.js
-  });
-} else {
+if (!sequelize) {
   // Otherwise, fall back to using the individual config values (for local dev)
+  if (databaseUrlError) {
+    console.warn('DATABASE_URL connection skipped due to parsing error.');
+  }
   console.log('Connecting using db.config.js settings...');
   sequelize = new Sequelize(
     dbConfig.DB,
