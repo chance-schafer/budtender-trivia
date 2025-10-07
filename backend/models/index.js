@@ -13,9 +13,40 @@ const db = {};
 let sequelize;
 
 // --- START: Render DATABASE_URL Integration ---
+let shouldUseDatabaseUrl = false;
+
 if (process.env.DATABASE_URL) {
+  try {
+    const parsedUrl = new URL(process.env.DATABASE_URL);
+    const hostname = parsedUrl.hostname || '';
+
+    // Determine whether the hostname looks resolvable. Render provides a FQDN with a dot.
+    // Local development commonly uses localhost or 127.0.0.1 (which we also allow).
+    const looksResolvable =
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.includes('.') ||
+      hostname === '';
+
+    if (looksResolvable) {
+      shouldUseDatabaseUrl = true;
+    } else {
+      console.warn(
+        `DATABASE_URL hostname "${hostname}" does not appear resolvable in this environment. ` +
+          'Falling back to db.config.js settings for local development.'
+      );
+    }
+  } catch (error) {
+    console.warn(
+      'DATABASE_URL is defined but could not be parsed. Falling back to db.config.js settings.',
+      error
+    );
+  }
+}
+
+if (shouldUseDatabaseUrl) {
   // If DATABASE_URL is set (like on Render), use it directly
-  console.log("Connecting via DATABASE_URL...");
+  console.log('Connecting via DATABASE_URL...');
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres', // Specify dialect (Render uses PostgreSQL)
     protocol: 'postgres',
@@ -30,7 +61,7 @@ if (process.env.DATABASE_URL) {
   });
 } else {
   // Otherwise, fall back to using the individual config values (for local dev)
-  console.log("Connecting using db.config.js settings...");
+  console.log('Connecting using db.config.js settings...');
   sequelize = new Sequelize(
     dbConfig.DB,
     dbConfig.USER,
@@ -40,7 +71,7 @@ if (process.env.DATABASE_URL) {
       port: dbConfig.PORT,
       dialect: dbConfig.dialect,
       pool: dbConfig.pool,
-      logging: env === 'development' ? console.log : false, // Log SQL in dev only
+      logging: env === 'development' ? console.log : false // Log SQL in dev only
     }
   );
 }
