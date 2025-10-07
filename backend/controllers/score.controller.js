@@ -23,30 +23,50 @@ exports.submitScore = async (req, res, next) => {
   // --- End Model Check ---
 
   // Validation
-  if (score === undefined || totalQuestions === undefined || !Array.isArray(results) || results.length !== totalQuestions) {
-      console.log(">>> Score Controller: Validation Failed - Invalid score data structure.");
-      return res.status(400).json({ message: "Invalid score data provided. Ensure score, totalQuestions, and results array (matching totalQuestions length) are present." });
+  if (score === undefined || totalQuestions === undefined || !Array.isArray(results)) {
+      console.log(">>> Score Controller: Validation Failed - Missing score fields or results array.");
+      return res.status(400).json({ message: "Invalid score data provided. Ensure score, totalQuestions, and results array are present." });
   }
-  const numericScore = Number(score);
+
   const numericTotalQuestions = Number(totalQuestions);
-  if (isNaN(numericScore) || isNaN(numericTotalQuestions) || numericTotalQuestions <= 0 || numericScore < 0 || numericScore > numericTotalQuestions) {
-      console.log(">>> Score Controller: Validation Failed - Invalid numeric values for score/totalQuestions.");
-      return res.status(400).json({ message: "Score and totalQuestions must be valid numbers. Score cannot be negative or exceed totalQuestions. totalQuestions must be positive." });
+  if (!Number.isFinite(numericTotalQuestions) || numericTotalQuestions <= 0) {
+      console.log(">>> Score Controller: Validation Failed - totalQuestions invalid:", totalQuestions);
+      return res.status(400).json({ message: "totalQuestions must be a positive number." });
   }
-  if (!results.every(r => typeof r.questionId === 'number' && typeof r.isCorrect === 'boolean')) {
-      console.log(">>> Score Controller: Validation Failed - Invalid format in results array items.");
-      return res.status(400).json({ message: "Each item in the results array must have a numeric 'questionId' and a boolean 'isCorrect'." });
+
+  const sanitizedResults = results
+      .map(result => ({
+          questionId: Number(result.questionId),
+          isCorrect: Boolean(result.isCorrect)
+      }))
+      .filter(result => Number.isInteger(result.questionId));
+
+  if (sanitizedResults.length !== numericTotalQuestions) {
+      console.log(">>> Score Controller: Validation Failed - Results length mismatch or invalid question IDs.");
+      return res.status(400).json({ message: "Results array must contain one entry per question with a valid numeric questionId." });
+  }
+
+  const numericScore = Number(score);
+  if (!Number.isFinite(numericScore) || numericScore < 0 || numericScore > numericTotalQuestions) {
+      console.log(">>> Score Controller: Validation Failed - Invalid score value:", score);
+      return res.status(400).json({ message: "Score must be a number between 0 and totalQuestions." });
   }
   // --- End Validation ---
+
+  const computedScore = sanitizedResults.filter(result => result.isCorrect).length;
+  if (computedScore !== numericScore) {
+      console.log(`>>> Score Controller: Provided score ${numericScore} does not match computed score ${computedScore}. Using computed value.`);
+  }
 
   const transaction = await db.sequelize.transaction();
   console.log(">>> Score Controller: Started transaction.");
   try {
     // 1. Save overall score record (using the correct Score model variable)
     console.log(">>> Score Controller: Saving overall score record...");
-    const percentage = parseFloat(((numericScore / numericTotalQuestions) * 100).toFixed(2));
+    const finalScoreValue = computedScore;
+    const percentage = parseFloat(((finalScoreValue / numericTotalQuestions) * 100).toFixed(2));
     const newScoreRecord = await Score.create({ // Use Score variable
-        score: numericScore,
+        score: finalScoreValue,
         totalQuestions: numericTotalQuestions,
         percentage: percentage,
         userId: userId
@@ -54,7 +74,7 @@ exports.submitScore = async (req, res, next) => {
     console.log(`>>> Score Controller: Overall score record saved (ID: ${newScoreRecord.id}). Updating question stats...`);
 
     // 2. Update individual question stats (using the correct UserQuestionStat model variable)
-    for (const result of results) {
+    for (const result of sanitizedResults) {
       const { questionId, isCorrect } = result;
       // Use UserQuestionStat variable
       const [stat, created] = await UserQuestionStat.findOrCreate({
@@ -124,6 +144,7 @@ exports.getCultivated = async (req, res, next) => {
         where: { userId: { [Op.in]: masteredUserIds } },
         include: [{
             model: User, // Use User variable
+            as: 'user',
             attributes: ['username', 'storeLocation'], // Select username and storeLocation
             required: true // INNER JOIN is fine here as we know the user exists
         }],

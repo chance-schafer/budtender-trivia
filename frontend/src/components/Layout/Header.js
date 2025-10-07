@@ -14,7 +14,6 @@ import {
     IdentificationIcon,
     CogIcon,
     BookOpenIcon,
-    ArrowPathIcon // Keep loading icon if used elsewhere (like dropdown)
 } from '@heroicons/react/24/outline';
 
 function Header() {
@@ -24,7 +23,6 @@ function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   // Keep state for potential use in dropdown or other features
   const [showCultivatedLink, setShowCultivatedLink] = useState(false);
-  const [isLoadingSummary, setIsLoadingSummary] = useState(false); // Keep for dropdown
 
   const isAdminOrMod = currentUser?.roles?.includes('ROLE_ADMIN') || currentUser?.roles?.includes('ROLE_MODERATOR');
 
@@ -46,7 +44,6 @@ function Header() {
     }
 
     const fetchSummaryForHeader = async () => {
-        setIsLoadingSummary(true); // Still set loading for potential dropdown use
         try {
           const response = await apiService.get('/stats/summary');
           // Still set the state based on mastery for potential dropdown use
@@ -54,8 +51,6 @@ function Header() {
         } catch (error) {
           console.error(">>> Header: Error fetching summary for card link:", error);
           setShowCultivatedLink(false);
-        } finally {
-          setIsLoadingSummary(false); // Clear loading state
         }
     };
     fetchSummaryForHeader();

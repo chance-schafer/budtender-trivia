@@ -3,7 +3,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const Score = require('./score'); // NOT './score.model' or any other variation
 const Sequelize = require('sequelize');
 const process = require('process');
 const dbConfig = require('../config/db.config.js'); // Import your config file
