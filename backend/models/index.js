@@ -3,7 +3,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const Score = require('./score'); // NOT './score.model' or any other variation
 const Sequelize = require('sequelize');
 const process = require('process');
 const dbConfig = require('../config/db.config.js'); // Import your config file
@@ -14,10 +13,72 @@ const db = {};
 let sequelize;
 
 // --- START: Render DATABASE_URL Integration ---
+let shouldUseDatabaseUrl = false;
+let databaseUrlToUse = process.env.DATABASE_URL;
+
 if (process.env.DATABASE_URL) {
+  try {
+    const parsedUrl = new URL(process.env.DATABASE_URL);
+    let hostname = parsedUrl.hostname || '';
+
+    // Determine whether the hostname looks resolvable. Render provides a FQDN with a dot.
+    // Local development commonly uses localhost or 127.0.0.1 (which we also allow).
+    let looksResolvable =
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.includes('.') ||
+      hostname === '';
+
+    if (!looksResolvable && hostname) {
+      const explicitSuffix =
+        process.env.DATABASE_URL_HOST_SUFFIX ||
+        process.env.DB_HOST_SUFFIX ||
+        '';
+
+      if (explicitSuffix.trim()) {
+        const normalizedSuffix = explicitSuffix.trim().replace(/^\.+/, '');
+        parsedUrl.hostname = `${hostname}.${normalizedSuffix}`;
+        hostname = parsedUrl.hostname;
+        looksResolvable = true;
+        databaseUrlToUse = parsedUrl.toString();
+        console.log(
+          `DATABASE_URL hostname appeared partial. Applied configured suffix to use "${hostname}".`
+        );
+      } else if (process.env.RENDER_REGION) {
+        const inferredSuffix = `${process.env.RENDER_REGION}-postgres.render.com`;
+        parsedUrl.hostname = `${hostname}.${inferredSuffix}`;
+        hostname = parsedUrl.hostname;
+        looksResolvable = true;
+        databaseUrlToUse = parsedUrl.toString();
+        console.log(
+          `DATABASE_URL hostname appeared partial. Inferred Render hostname "${hostname}" using RENDER_REGION.`
+        );
+      }
+    }
+
+    if (looksResolvable) {
+      if (databaseUrlToUse && databaseUrlToUse !== process.env.DATABASE_URL) {
+        process.env.DATABASE_URL = databaseUrlToUse;
+      }
+      shouldUseDatabaseUrl = true;
+    } else {
+      console.warn(
+        `DATABASE_URL hostname "${hostname}" does not appear resolvable in this environment. ` +
+          'Falling back to db.config.js settings for local development.'
+      );
+    }
+  } catch (error) {
+    console.warn(
+      'DATABASE_URL is defined but could not be parsed. Falling back to db.config.js settings.',
+      error
+    );
+  }
+}
+
+if (shouldUseDatabaseUrl) {
   // If DATABASE_URL is set (like on Render), use it directly
-  console.log("Connecting via DATABASE_URL...");
-  sequelize = new Sequelize(process.env.DATABASE_URL, {
+  console.log('Connecting via DATABASE_URL...');
+  sequelize = new Sequelize(databaseUrlToUse, {
     dialect: 'postgres', // Specify dialect (Render uses PostgreSQL)
     protocol: 'postgres',
     dialectOptions: {
@@ -31,7 +92,7 @@ if (process.env.DATABASE_URL) {
   });
 } else {
   // Otherwise, fall back to using the individual config values (for local dev)
-  console.log("Connecting using db.config.js settings...");
+  console.log('Connecting using db.config.js settings...');
   sequelize = new Sequelize(
     dbConfig.DB,
     dbConfig.USER,
@@ -41,7 +102,7 @@ if (process.env.DATABASE_URL) {
       port: dbConfig.PORT,
       dialect: dbConfig.dialect,
       pool: dbConfig.pool,
-      logging: env === 'development' ? console.log : false, // Log SQL in dev only
+      logging: env === 'development' ? console.log : false // Log SQL in dev only
     }
   );
 }
