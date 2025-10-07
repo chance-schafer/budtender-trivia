@@ -1,49 +1,51 @@
-// backend/models/score.js
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const User = require('./user');
-// const Question = require('./question'); // Not directly needed for overall score
+// backend/models/score.model.js
 
-const Score = sequelize.define('scores', {
-    id: {
-        type: DataTypes.INTEGER,
+module.exports = (sequelize, Sequelize) => {
+  const Score = sequelize.define(
+    'scores',
+    {
+      id: {
+        type: Sequelize.INTEGER,
         autoIncrement: true,
-        primaryKey: true
-    },
-    userId: {
-        type: DataTypes.INTEGER,
+        primaryKey: true,
+      },
+      userId: {
+        type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-            model: User, // 'users' is the table name
-            key: 'id'
-        }
+          model: 'users',
+          key: 'id',
+        },
+        field: 'userId',
+      },
+      score: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+      },
+      totalQuestions: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        field: 'totalQuestions',
+      },
+      percentage: {
+        type: Sequelize.DECIMAL(5, 2),
+        allowNull: false,
+        defaultValue: 0,
+      },
     },
-    score: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    },
-    // REMOVE these fields if this table is for OVERALL game scores
-    // questionId: {
-    //     type: DataTypes.INTEGER,
-    //     allowNull: false,
-    //     references: {
-    //         model: Question, // 'questions' is the table name
-    //         key: 'id'
-    //     }
-    // },
-    // isCorrect: {
-    //     type: DataTypes.BOOLEAN,
-    //     allowNull: false
-    // }
-}, {
-    timestamps: true
-});
+    {
+      tableName: 'scores',
+      timestamps: true,
+    }
+  );
 
-Score.belongsTo(User, { foreignKey: 'userId' });
-User.hasMany(Score, { foreignKey: 'userId' });
+  Score.associate = (models) => {
+    Score.belongsTo(models.users, {
+      foreignKey: 'userId',
+      as: 'user',
+    });
+  };
 
-// REMOVE these associations if questionId is removed
-// Score.belongsTo(Question, { foreignKey: 'questionId' });
-// Question.hasMany(Score, { foreignKey: 'questionId' });
-
-module.exports = Score;
+  return Score;
+};

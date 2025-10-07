@@ -6,7 +6,6 @@ import {
     Box,
     List,
     ListItem,
-    ListItemText,
     Paper,
     Link as MuiLink,
     InputAdornment
@@ -806,7 +805,6 @@ function ResourceGuidePage() {
                                 underline="hover" // Consistent underline behavior
                                 className="!text-sm !text-gray-700 dark:!text-gray-300 hover:!text-blue-600 dark:hover:!text-blue-400 w-full block px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" // Added padding/hover styles
                             >
-                                {/* Removed ListItemText for simpler structure, Link text is sufficient */}
                                 {item.title}
                             </MuiLink>
                         </ListItem>
