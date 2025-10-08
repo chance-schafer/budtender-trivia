@@ -20,20 +20,13 @@ if (process.env.DATABASE_URL) {
     const parsedUrl = new URL(process.env.DATABASE_URL);
     const hostname = parsedUrl.hostname || '';
 
-    // Determine whether the hostname looks resolvable. Render provides a FQDN with a dot.
-    // Local development commonly uses localhost or 127.0.0.1 (which we also allow).
-    const looksResolvable =
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname.includes('.') ||
-      hostname === '';
-
-    if (looksResolvable) {
+    // Treat any non-empty hostname (including Render's dashed hostnames) as usable and
+    // only fall back to the local configuration when the hostname is missing entirely.
+    if (hostname) {
       shouldUseDatabaseUrl = true;
     } else {
       console.warn(
-        `DATABASE_URL hostname "${hostname}" does not appear resolvable in this environment. ` +
-          'Falling back to db.config.js settings for local development.'
+        'DATABASE_URL is defined without a hostname. Falling back to db.config.js settings for local development.'
       );
     }
   } catch (error) {
